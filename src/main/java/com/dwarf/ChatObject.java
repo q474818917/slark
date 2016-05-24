@@ -1,4 +1,4 @@
-package com.dwarf.utils;
+package com.dwarf;
 
 public class ChatObject {
 

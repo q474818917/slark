@@ -34,10 +34,20 @@
 			<version>1.7.10</version>
 		</dependency>
 		<dependency>
-	    	<groupId>org.mongodb</groupId>
-	    	<artifactId>mongo-java-driver</artifactId>
-	    	<version>3.0.3</version>
-	    </dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongo-java-driver</artifactId>
+			<version>3.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.curator</groupId>
+			<artifactId>curator-examples</artifactId>
+			<version>3.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>io.socket</groupId>
+			<artifactId>socket.io-client</artifactId>
+			<version>0.7.0</version>
+		</dependency>
 	</dependencies>
-	
+
 </project>

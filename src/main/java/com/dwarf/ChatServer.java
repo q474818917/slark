@@ -1,68 +1,129 @@
 package com.dwarf;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.List;
+import java.util.UUID;
 
+import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.Configuration;
+import com.corundumstudio.socketio.SocketIOClient;
+import com.corundumstudio.socketio.SocketIONamespace;
 import com.corundumstudio.socketio.SocketIOServer;
+import com.corundumstudio.socketio.listener.ConnectListener;
 import com.corundumstudio.socketio.listener.DataListener;
+import com.corundumstudio.socketio.listener.DisconnectListener;
+import com.dwarf.zk.ZkClient;
 
-public class ChatServer {
+public class ChatServer implements SocketIOServerOperations {
+	
 	private static Logger logger = LoggerFactory.getLogger(ChatServer.class);
+	private final SocketIOServer server;
+	private final ZkClient zkclient;
+	private final MongoStore mongoStore;
 	
-	private final static Map<String, String> userMap = new HashMap<>();
-	private static SocketIOServer server;
-	
-	private static Properties prop = new Properties();
-	{
-		InputStream in = this.getClass().getClassLoader().getResourceAsStream("server.properties");
-		try {
-			prop.load(in);
-			logger.info("server.properties loading succeed");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+	private UUID sessionID;
 	
 	public ChatServer(){
 		Configuration config = new Configuration();
-		String hostName = prop.getProperty("socketio.server");
-		String port = prop.getProperty("socketio.port");
-		config.setHostname(hostName);
-		config.setPort(Integer.parseInt(port));
-		logger.info("ChatServer ip is {}, port is {}", hostName, port);
-		server = new SocketIOServer(config);
+        config.setHostname("localhost");
+        config.setPort(9092);
+        server = new SocketIOServer(config);
+        
+        zkclient = new ZkClient("120.25.163.237:2181");
+        mongoStore = new MongoStore("chat");
+	}
+	
+	/**
+	 * 群聊事件：message
+	 */
+	public void handleNamespaces(){
+		List<Document> docList = mongoStore.findAll("chat_room");
+		for(Document document : docList){
+			String prefix = "/" + document.get("id");
+			SocketIONamespace namespace = server.addNamespace(prefix);
+			
+			namespace.addConnectListener(new ConnectListener(){
+
+				@Override
+				public void onConnect(SocketIOClient client) {
+					sessionID = client.getSessionId();
+					zkclient.createEphemeral(prefix + "/" + sessionID, null);
+				}
+				
+			});
+			
+			namespace.addDisconnectListener(new DisconnectListener(){
+
+				@Override
+				public void onDisconnect(SocketIOClient client) {
+					client.disconnect();
+					zkclient.close();
+				}
+				
+			});
+			
+			namespace.addEventListener("message", ChatObject.class, new DataListener<ChatObject>(){
+
+				@Override
+				public void onData(SocketIOClient client, ChatObject data, AckRequest ackSender) throws Exception {
+					namespace.getBroadcastOperations().sendEvent("broadcast", data);
+				}
+				
+			});
+		}
 	}
 	
 	public void start(){
 		server.start();
 	}
 	
-	public void stop(){
-		server.stop();
-	}
-	
-	public <T> void addEventListener(String eventName, Class<T> eventClass, DataListener<T> listener){
-		server.addEventListener(eventName, eventClass, listener);
-	}
-	
-	public void addConnectionListener(){
-		
-	}
-	
-	public void addDisConnectionListener(){
-		
-	}
-	
 	public static void main(String args[]){
-		ChatServer server = new ChatServer();
-		server.start();
+		
+		
+        /*server.addConnectListener(new ConnectListener(){
+
+			@Override
+			public void onConnect(SocketIOClient client) {
+				logger.info("client UUID has connect successful !!!, and the uuid is {}", client.getSessionId() );
+			}
+        	
+        });
+        
+        server.addDisconnectListener(new DisconnectListener(){
+
+			@Override
+			public void onDisconnect(SocketIOClient client) {
+				logger.info("client UUID has disconnect successful !!! and the uuid is {}", client.getSessionId());
+			}
+        	
+        });
+        
+        server.addEventListener("chatEvent", ChatObject.class, new DataListener<ChatObject>(){
+
+			@Override
+			public void onData(SocketIOClient client, ChatObject data,
+					AckRequest ackSender) throws Exception {
+				//判别client是否带有ackRequest
+				if(ackSender.isAckRequested()){
+					ackSender.sendAckData("message was delivered to server!!");
+				}
+				server.getBroadcastOperations().sendEvent("broadcast", data, new BroadcastAckCallback<String>(String.class));
+				
+			}
+        	
+        });
+        
+        server.start();*/
+        
+		
+	}
+
+	@Override
+	public void handleUserchat() {
+		
 	}
 	
 }
