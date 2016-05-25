@@ -1,4 +1,4 @@
-package com.dwarf;
+package com.dwarf.common.mongo;
 
 import java.io.IOException;
 import java.io.InputStream;

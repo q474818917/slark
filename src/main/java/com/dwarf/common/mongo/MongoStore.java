@@ -1,4 +1,4 @@
-package com.dwarf;
+package com.dwarf.common.mongo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,8 +52,8 @@ public class MongoStore {
 	
 	public static void main(String[] args) {
 		MongoStore store = new MongoStore("chat");
-		/*Document document = new Document("id", 2).append("name", "巧克力");
-		store.insert(document);*/
+		Document document = new Document("id", 2).append("name", "周杰伦").append("username", "zhoujl").append("password", "123456");
+		store.insert(document, "user");
 	}
 
 }

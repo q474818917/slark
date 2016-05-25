@@ -1,4 +1,4 @@
-package com.dwarf;
+package com.dwarf.common.mongo;
 
 import com.mongodb.client.MongoDatabase;
 
